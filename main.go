@@ -22,8 +22,8 @@ func configure() {
 
 	viper.SetDefault("api.base", "https://domain.tld")
 	viper.SetDefault("api.key", "secret")
+	viper.SetDefault("api.broker", "tcp://domain.tld:port")
 	viper.SetDefault("lynx.installation_id", 1)
-	viper.SetDefault("mqtt.broker", "tcp://domain.tld:port")
 
 	if err := viper.ReadInConfig(); err != nil {
 		_ = viper.SafeWriteConfig()
@@ -33,7 +33,7 @@ func configure() {
 
 func lynxClientSetup() {
 	opts := mqtt.NewClientOptions()
-	opts.AddBroker(viper.GetString("mqtt.broker"))
+	opts.AddBroker(viper.GetString("api.broker"))
 	opts.SetCleanSession(true)
 	opts.SetClientID("lynx-integration-example")
 	opts.SetConnectTimeout(time.Second)
@@ -65,7 +65,7 @@ func messageHandler(_ mqtt.Client, message mqtt.Message) {
 		log.Println("Failed to unmarshal payload:", err)
 		return
 	}
-	log.Printf("%d: %v", m.Timestamp, m.Value)
+	log.Printf("%s: %v", time.Unix(m.Timestamp, 0), m.Value)
 }
 
 func main() {
