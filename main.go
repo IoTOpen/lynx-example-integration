@@ -52,8 +52,8 @@ func lynxClientSetup() {
 	}
 }
 
-func subscribe(fn *lynx.Function) {
-	topic, _ := fn.Meta["topic_read"]
+func subscribe(fn *lynx.Function, clientID int64) {
+	topic := fmt.Sprintf("%d/%s", clientID, fn.Meta["topic_read"])
 	if token := client.Mqtt.Subscribe(topic, 2, messageHandler); token.WaitTimeout(time.Second) && token.Error() != nil {
 		log.Fatalf("MQTT: Could not subscribe to topic: %s, error: %s", topic, token.Error())
 	}
@@ -73,6 +73,10 @@ func main() {
 	lynxClientSetup()
 
 	installationID := viper.GetInt64("lynx.installation_id")
+	installation, err := client.GetInstallation(installationID)
+	if err != nil {
+		log.Fatalln("Could not fetch installation:", err)
+	}
 	devices, err := client.GetDevices(installationID, map[string]string{
 		"example.type": "go-lynx",
 	})
@@ -88,7 +92,7 @@ func main() {
 	if err != nil {
 		log.Fatalln("Could not fetch function:", err)
 	}
-	subscribe(functions[0])
+	subscribe(functions[0], installation.ClientID)
 	sigc := make(chan os.Signal)
 	signal.Notify(sigc, syscall.SIGINT, syscall.SIGTERM)
 	<-sigc
